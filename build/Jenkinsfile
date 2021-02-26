@@ -1,0 +1,54 @@
+pipeline {
+
+    agent any
+
+    environment {
+        HARBOR_CREDS = credentials('harbor-cred')
+    }
+
+    parameters {
+        string(name: 'HARBOR_HOST', defaultValue: 'harbor.xhhk', description: 'harbor仓库的地址')
+        string(name: 'DOCKER_IMAGE', defaultValue: 'common/kube-sweeper', description: 'docker镜像名')
+        string(name: 'APP_NAME', defaultValue: 'kube-sweeper', description: 'App Name')
+        string(name: 'HTTP_PROXY', defaultValue: '', description: '外网代理地址')
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                echo '>>> Getting version ...'
+                // Getting the project's version.
+                // The readJSON method need the pipeline-utility-steps plug-in.
+                script {
+                    // packageVersion = readFile file: '../version'
+                    // packageVersion = packageVersion.trim()
+                    packageVersion = '0.0.1'
+                    commitSha1 = sh returnStdout: true, script: 'git rev-parse HEAD'
+                    commitSha1 = commitSha1.trim()
+                    commitShort = commitSha1[0..5]
+                    def now = new Date()
+                    buildTime = now.format('yyyy-MM-dd HH:mm:ss')
+                    buildNameEndfix = now.format('yyyyMMddHH')
+                }
+                // Build the project image.
+                echo ">>> Building ${params.HARBOR_HOST}/${params.DOCKER_IMAGE}:${packageVersion} image..."
+                sh "docker build -t ${params.HARBOR_HOST}/${params.DOCKER_IMAGE}:${packageVersion} " +
+                    "--build-arg APP_NAME=\"${params.APP_NAME}\" --build-arg HTTP_PROXY=${HTTP_PROXY} " +
+                    "--build-arg BUILD_VERSION=\"${packageVersion}\" --build-arg BUILD_TIME=\"${buildTime}\" " +
+                    "--build-arg BUILD_NAME_ENDFIX=\"${buildNameEndfix}\" --build-arg COMMIT_SHA1=\"${commitSha1}\" " +
+                    "--build-arg COMMIT_SHORT=\"${commitShort}\" " +
+                    "-f build/Dockerfile ."
+                // Push image to harbor.
+                echo '>>> Publish image'
+                sh "docker login -u ${HARBOR_CREDS_USR} -p '${HARBOR_CREDS_PSW}' ${params.HARBOR_HOST}"
+                sh "docker push ${params.HARBOR_HOST}/${params.DOCKER_IMAGE}:${packageVersion}"
+                // Clean workspace.
+                sh "docker rmi ${params.HARBOR_HOST}/${params.DOCKER_IMAGE}:${packageVersion}"
+                sh "docker logout ${params.HARBOR_HOST}"
+                sh "docker rmi -f `docker images -f 'dangling=true' -q` || echo \"Remove <none> image finished.\""
+                echo '>>> Completed build stage!'
+            }
+        }
+
+    }
+}

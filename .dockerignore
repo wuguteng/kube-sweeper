@@ -1,0 +1,9 @@
+.gitignore
+*.md
+Dockerfile
+scripts
+log
+docs
+.vscode
+target
+local.*
