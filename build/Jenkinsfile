@@ -22,7 +22,7 @@ pipeline {
                 script {
                     // packageVersion = readFile file: '../version'
                     // packageVersion = packageVersion.trim()
-                    packageVersion = '0.0.1'
+                    packageVersion = '0.0.2'
                     commitSha1 = sh returnStdout: true, script: 'git rev-parse HEAD'
                     commitSha1 = commitSha1.trim()
                     commitShort = commitSha1[0..5]

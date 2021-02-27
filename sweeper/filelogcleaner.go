@@ -56,6 +56,7 @@ func (c *fileLogCleaner) start(filePath string) error {
 		return err
 	}
 
+	c.logpath = filePath
 	c.pathpattern = r
 	c.kubernetesApiServer = "https://kubernetes.default"
 	c.kubernetesCaPath = KubernetesCAFilePath
