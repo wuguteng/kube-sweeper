@@ -102,7 +102,7 @@ func (c *fileLogCleaner) doClean(t *utils.Timer, tim time.Time, delegate interfa
 				// remove the path
 				logger.Info.Printf("found that the pod belongs to log path:%s were not exists, clean it.", fi.Name())
 				rp := path.Join(c.logpath, fi.Name())
-				err = os.Remove(rp)
+				err = os.RemoveAll(rp)
 				if nil != err {
 					logger.Error.Printf("removing path:%s failed with error:%v", rp, err)
 				}
