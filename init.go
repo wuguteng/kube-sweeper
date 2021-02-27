@@ -8,7 +8,7 @@ import (
 
 // Variables
 var (
-	BuildVersion = "v0.0.1"
+	BuildVersion = "0.0.3"
 	BuildName    = "Kubernetes Sweeper"
 	BuiltTime    = ""
 	CommitID     = ""

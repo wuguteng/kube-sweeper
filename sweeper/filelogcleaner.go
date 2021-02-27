@@ -157,7 +157,7 @@ func GetKubernetesPodState(podInfo models.PodInfo, apiServer string, caPath stri
 		result = &models.KubeAPIResult{}
 	}
 	if nil != resp {
-		err = json.Unmarshal(resp, &result)
+		err = json.Unmarshal(resp, result)
 		if nil != err {
 			logger.Error.Printf("parse kube api:%s result:%s failed with error:%v", api, string(resp), err)
 		}
