@@ -7,4 +7,5 @@ type PodInfo struct {
 	Version   string            `json:"version" yaml:"version"`
 	PosSuffix string            `json:"pod_suffix" yaml:"pod_suffix"`
 	Labels    map[string]string `json:"labels" yaml:"labels"`
+	PodName   string            `json:"pod_name" yaml:"pod_name"`
 }

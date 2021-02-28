@@ -23,15 +23,17 @@ type fileLogCleaner struct {
 	kubernetesCaPath    string
 	timer               *utils.Timer
 	pathpattern         *regexp.Regexp
+	podnamepattern      *regexp.Regexp
 }
 
 // Constants
 const (
-	LogPathExtractPattern = `(?P<lan>\w+)-(?P<namespace>\w+)-(?P<pod>\w+)-(?P<version>[v]?\d+(?:\.\d+)+(?:-(?:alpha|beta|rc|hotfix)\d*)?)-(?P<pod_suffix>.*)$`
-	KubernetesCAFilePath  = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-	KubernetesTokenPath   = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+	LogPathExtractPattern        = `(?P<lan>\w+)-(?P<namespace>\w+)-(?P<pod>\w+)-(?P<version>[v]?\d+(?:\.\d+)+(?:-(?:alpha|beta|rc|hotfix)\d*)?)-(?P<pod_suffix>.*)$`
+	LogPathPodNameExtractPattern = `\w+-\w+-(.*)`
+	KubernetesCAFilePath         = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+	KubernetesTokenPath          = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 
-	KubernetesPodAPI = "/api/v1/namespaces/dev/pods/"
+	KubernetesPodAPI = "/api/v1/namespaces/%s/pods/%s"
 )
 
 // Variables
@@ -52,12 +54,18 @@ func (c *fileLogCleaner) start(filePath string) error {
 
 	r, err := regexp.Compile(LogPathExtractPattern)
 	if nil != err {
-		logger.Error.Printf("compile log path extract pattern:%s failed with error:%v", LogPathExtractPattern, err)
+		logger.Error.Printf("compile log path extract full info pattern:%s failed with error:%v", LogPathExtractPattern, err)
+		return err
+	}
+	r2, err := regexp.Compile(LogPathPodNameExtractPattern)
+	if nil != err {
+		logger.Error.Printf("compile log path extract pod name pattern:%s failed with error:%v", LogPathPodNameExtractPattern, err)
 		return err
 	}
 
 	c.logpath = filePath
 	c.pathpattern = r
+	c.podnamepattern = r2
 	c.kubernetesApiServer = "https://kubernetes.default"
 	c.kubernetesCaPath = KubernetesCAFilePath
 
@@ -91,7 +99,7 @@ func (c *fileLogCleaner) doClean(t *utils.Timer, tim time.Time, delegate interfa
 	}
 	for _, fi := range fis {
 		if fi.IsDir() {
-			podInfo, err := ExtractPodInfoFromFileName(c.pathpattern, fi.Name())
+			podInfo, err := ExtractPodInfoFromFileName(c.pathpattern, c.podnamepattern, fi.Name())
 			if nil != err {
 				continue
 			}
@@ -112,9 +120,16 @@ func (c *fileLogCleaner) doClean(t *utils.Timer, tim time.Time, delegate interfa
 }
 
 // ExtractPodInfoFromFileName from path name
-func ExtractPodInfoFromFileName(pathpattern *regexp.Regexp, fileName string) (models.PodInfo, error) {
-	mr := pathpattern.FindAllStringSubmatch(fileName, -1)
+func ExtractPodInfoFromFileName(pathpattern *regexp.Regexp, podnamepattern *regexp.Regexp, fileName string) (models.PodInfo, error) {
+	mr2 := podnamepattern.FindAllStringSubmatch(fileName, -1)
 	podInfo := models.PodInfo{Labels: map[string]string{}}
+	if len(mr2) < 1 {
+		return podInfo, fmt.Errorf("path:%s not valid for pod path name", fileName)
+	}
+	if len(mr2[0]) > 1 {
+		podInfo.PodName = mr2[0][1]
+	}
+	mr := pathpattern.FindAllStringSubmatch(fileName, -1)
 	if len(mr) < 1 {
 		return podInfo, fmt.Errorf("path:%s not valid for pod path name", fileName)
 	}
@@ -148,7 +163,7 @@ func GetKubernetesPodState(podInfo models.PodInfo, apiServer string, caPath stri
 	headers := map[string]string{
 		"Authorization": "Bearer " + token,
 	}
-	api := KubernetesPodAPI + fmt.Sprintf("%s-%s-%s", podInfo.Name, podInfo.Version, podInfo.PosSuffix)
+	api := fmt.Sprintf(KubernetesPodAPI, podInfo.Namespace, podInfo.PodName)
 	resp, err := httpclient.HTTPQuery("GET", apiServer+api, nil, httpclient.WithHTTPTLSOptions(&tlsOption), httpclient.WithHTTPHeaders(headers))
 	if nil != err {
 		logger.Warning.Printf("query api:%s failed with error:%+v", api, err)
