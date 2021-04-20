@@ -20,7 +20,7 @@ pipeline {
                 // Getting the project's version.
                 // The readJSON method need the pipeline-utility-steps plug-in.
                 script {
-                    packageVersion = readFile file: '../version'
+                    packageVersion = readFile file: 'version'
                     packageVersion = packageVersion.trim()
                     commitSha1 = sh returnStdout: true, script: 'git rev-parse HEAD'
                     commitSha1 = commitSha1.trim()
