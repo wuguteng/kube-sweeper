@@ -5,6 +5,9 @@ import (
 	"os"
 	"strconv"
 
+	"net/http"
+	_ "net/http/pprof"
+
 	"github.com/kataras/iris"
 	"github.com/kevinyjn/gocom/application"
 	"github.com/kevinyjn/gocom/config"
@@ -63,6 +66,13 @@ func startServer() {
 			logger.Error.Printf("server port:%s were not valid", serverPort)
 			return
 		}
+	}
+
+	pprofPort := os.Getenv("PPROF_LISTEN_PORT")
+	if "" != pprofPort {
+		go func() {
+			http.ListenAndServe(fmt.Sprintf("0.0.0.0:%s", pprofPort), nil)
+		}()
 	}
 
 	listenAddr := fmt.Sprintf("%s:%d", "0.0.0.0", bindPort)
