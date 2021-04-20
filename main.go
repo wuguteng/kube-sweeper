@@ -8,10 +8,6 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
-	"github.com/kataras/iris"
-	"github.com/kevinyjn/gocom/application"
-	"github.com/kevinyjn/gocom/config"
-	"github.com/kevinyjn/gocom/healthz"
 	"github.com/kevinyjn/gocom/logger"
 	"wuguteng.com/kube-sweeper/sweeper"
 )
@@ -68,16 +64,10 @@ func startServer() {
 		}
 	}
 
-	pprofPort := os.Getenv("PPROF_LISTEN_PORT")
-	if "" != pprofPort {
-		go func() {
-			http.ListenAndServe(fmt.Sprintf("0.0.0.0:%s", pprofPort), nil)
-		}()
-	}
-
 	listenAddr := fmt.Sprintf("%s:%d", "0.0.0.0", bindPort)
 	logger.Info.Printf("starting server on %s...", listenAddr)
-	app := application.GetApplication(config.ServerMain)
-	healthz.InitHealthz(app)
-	app.Run(iris.Addr(listenAddr), iris.WithoutServerError(iris.ErrServerClosed))
+	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Ok"))
+	})
+	http.ListenAndServe(listenAddr, nil)
 }
