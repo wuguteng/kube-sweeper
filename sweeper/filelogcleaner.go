@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"regexp"
-	"runtime"
 	"time"
 
 	"github.com/kevinyjn/gocom/definations"
@@ -119,7 +118,7 @@ func (c *fileLogCleaner) doClean(t *utils.Timer, tim time.Time, delegate interfa
 		}
 	}
 	// force run gc to recycle the memory usage
-	runtime.GC()
+	// runtime.GC()
 }
 
 // ExtractPodInfoFromFileName from path name
