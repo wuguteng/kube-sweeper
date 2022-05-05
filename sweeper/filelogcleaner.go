@@ -28,7 +28,7 @@ type fileLogCleaner struct {
 
 // Constants
 const (
-	LogPathExtractPattern        = `(?P<lan>\w+)-(?P<namespace>\w+)-(?P<pod>\w+)-(?P<version>[v]?\d+(?:\.\d+)+(?:-(?:alpha|beta|rc|hotfix)\d*)?)-(?P<pod_suffix>.*)$`
+	LogPathExtractPattern        = `(?P<lan>\w+)-(?P<namespace>\w+)-(?P<pod>\w+)(?:-(?P<version>(?:(?:[v]?\d+(?:\.\d+)+(?:-(?:alpha|beta|rc|hotfix)\d*)?)|canary)))?-(?P<pod_suffix>[a-z\d]+(?:-[a-z\d]+))$`
 	LogPathPodNameExtractPattern = `\w+-\w+-(.*)`
 	KubernetesCAFilePath         = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 	KubernetesTokenPath          = "/var/run/secrets/kubernetes.io/serviceaccount/token"
